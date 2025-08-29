@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Plex Radio Player has been refactored into a modular system with two main components:
+The Plex Radio Player Client is used for serving as a client for [Plex Radio](https://github.com/cbattlegear/plex-radio). It is comprised of two components.
 
 1. **Radio Core** (`radio_client.py`) - Handles audio playback, API communication, and button interactions
 2. **Display Manager** (`display_manager.py`) - Provides a configurable display system that works with different screen types
@@ -233,3 +233,8 @@ For radio functionality issues:
 1. Test API connectivity separately
 2. Check ffplay installation
 3. Verify GPIO button connections
+
+
+## NOTE
+
+I absolutely used AI to write this whole thing and while initially conflicted I dont care as much as I am listening to my tunes faster.
