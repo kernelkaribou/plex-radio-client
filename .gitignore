@@ -1,0 +1,6 @@
+.venv
+__pycache__/
+
+# Temp client file
+last_channel.txt
+.lgd-nfy0

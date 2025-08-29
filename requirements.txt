@@ -1,0 +1,29 @@
+certifi==2025.8.3
+cffi==1.17.1
+charset-normalizer==3.4.3
+colorzero==2.0
+gpiozero==2.0.1
+i2c-lcd==0.1.0
+idna==3.10
+lgpio==0.2.2.0
+pycparser==2.22
+requests==2.32.5
+smbus-cffi==0.5.1
+urllib3==2.5.0
+
+
+# Optional dependencies for different display types
+# Uncomment as needed for your display configuration
+
+# For OLED displays (SSD1306)
+# adafruit-circuitpython-ssd1306>=2.12.0
+# adafruit-circuitpython-busdevice>=5.2.0
+# board>=1.0
+
+# For other display types
+# luma.oled>=3.8.0  # Alternative OLED library
+# RPi.GPIO>=0.7.1   # For direct GPIO control (if not using gpiozero)
+
+# Development and testing
+# pytest>=7.0.0     # For running tests
+# pytest-cov>=4.0.0 # For coverage reports
