@@ -26,11 +26,11 @@ from display_manager import (
 
 
 # Define each button and the GPIO pin it's connected to
-radio_power_btn = Button(26, bounce_time=0.01)   # Power On/Off
-volume_down_btn = Button(27, bounce_time=0.01)   # Volume Down
-volume_up_btn = Button(17, bounce_time=0.01)    # Volume Up
-channel_down_btn = Button(6, bounce_time=0.01)  # Previous Channel
-channel_up_btn = Button(5, bounce_time=0.01)    # Next Channel
+radio_power_btn = Button(25, bounce_time=0.01)   # Power On/Off
+volume_down_btn = Button(24, bounce_time=0.01)   # Volume Down
+volume_up_btn = Button(23, bounce_time=0.01)    # Volume Up
+channel_down_btn = Button(15, bounce_time=0.01)  # Previous Channel
+channel_up_btn = Button(14, bounce_time=0.01)    # Next Channel
 
 
 class PlexRadioClient:
@@ -237,11 +237,11 @@ def set_volume(volume_percent):
 
 
 def adjust_volume(direction, radio_client):
-    """Adjusts the system volume by 5% up or down, but only when radio is playing."""
-    # Prevent volume changes when radio is off
-    if not radio_client.is_playing:
-        print("Volume adjustment ignored - radio is off")
-        return
+    """Adjusts the system volume by 5% up or down."""
+    # # Prevent volume changes when radio is off
+    # if not radio_client.is_playing:
+    #     print("Volume adjustment ignored - radio is off")
+    #     return
     
     subprocess.run(['pactl', 'set-sink-volume', '@DEFAULT_SINK@', f"{'+' if direction > 0 else '-'}5%"], 
                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
