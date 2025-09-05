@@ -2,8 +2,7 @@
 Plex Radio Player - Core Functionality
 
 This module handles the core radio functionality including audio playback,
-API communicatio            print("Stopping current playback...")
-            log_debug("Stopping current playback"), button interactions, and station management.
+API communication, button interactions, and station management.
 The display functionality has been separated into display_manager.py
 """
 
@@ -18,11 +17,9 @@ from signal import pause
 
 from display_manager import (
     DisplayManager, 
-    create_i2c_display_manager, 
+    create_display_manager, 
     VolumeScreen, 
     ChannelScreen, 
-    ErrorScreen,
-    GoodbyeScreen
 )
 
 # Simple logging control
@@ -90,7 +87,7 @@ class PlexRadioClient:
         
         # Initialize display manager
         if display_manager is None:
-            self.display = create_i2c_display_manager()
+            self.display = create_display_manager()
         else:
             self.display = display_manager
         

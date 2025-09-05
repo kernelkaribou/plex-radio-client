@@ -16,10 +16,9 @@ services:
       - GPIO_VOLUME_DOWN_PIN=24
       - GPIO_CHANNEL_UP_PIN=14
       - GPIO_CHANNEL_DOWN_PIN=15
-      - HARDWARE_MODE=false        # Set to true only if you have GPIO hardware properly configured
+      - HARDWARE_MODE=true        # Set to true only if you have GPIO hardware properly configured
       # Logging configuration
       - RADIO_QUIET=true           # Set to false for debug output
-      - DISPLAY_VERBOSE=false      # Set to true to see all display updates
     
     # Volume mounts for persistence and device access
     volumes:

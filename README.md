@@ -1,23 +1,29 @@
-# Plex Radio Player - Modular Display System
+# Plex Radio Player - I2C LCD Display
 
 ## Overview
 
-The Plex Radio Player Client is used for serving as a client for [Plex Radio](https://github.com/cbattlegear/plex-radio). It is comprised of two components.
+The Plex Radio Player Client serves as a hardware client for [Plex Radio](https://github.com/cbattlegear/plex-radio). It requires a 16x2 I2C LCD display and will fail to start without one.
+
+**Hardware Requirements:**
+- 16x2 I2C LCD Display (REQUIRED)
+- Raspberry Pi or compatible GPIO system
+- I2C interface enabled
+- GPIO pins for buttons (configurable)
+
+The application is comprised of two components:
 
 1. **Radio Core** (`radio_client.py`) - Handles audio playback, API communication, and button interactions
-2. **Display Manager** (`display_manager.py`) - Provides a configurable display system that works with different screen types
+2. **Display Manager** (`display_manager.py`) - Manages the I2C LCD display with fail-safe operation
 
 ## Architecture
 
-### Display Manager Components
+### Display System
+- **I2C LCD Only** - Exclusively supports 16x2 I2C LCD displays
+- **Fail-Safe Design** - Application exits if I2C LCD is not available
+- **No Mock/Fallback** - Requires actual hardware for operation
 
-#### DisplayDriver (Abstract Base Class)
-- `I2CLCDDriver` - For 1602 I2C LCD displays (16x2)
-- `MockDisplayDriver` - For testing without hardware
-- Custom drivers can be created by extending `DisplayDriver`
-
-#### DisplayScreen Classes
-- `RadioDefaultScreen` - Shows channel name and current song with marquee scrolling
+#### Display Screens
+- `RadioScreen` - Shows channel name and current song with marquee scrolling
 - `VolumeScreen` - Temporary screen for volume changes
 - `ChannelScreen` - Temporary screen for channel changes
 - `ErrorScreen` - Shows error messages
@@ -78,7 +84,6 @@ docker-compose up -d
 - `GPIO_CHANNEL_UP_PIN`: GPIO pin for channel up button (default: `14`)
 - `GPIO_CHANNEL_DOWN_PIN`: GPIO pin for channel down button (default: `15`)
 - `RADIO_QUIET`: Set to `true` for minimal logging (state changes only), `false` for debug output (default: `false`)
-- `DISPLAY_VERBOSE`: Set to `true` to see all LCD display line updates (default: `false`)
 - `PULSE_SERVER`: PulseAudio server address if needed
 
 **Volume Mounts:**
