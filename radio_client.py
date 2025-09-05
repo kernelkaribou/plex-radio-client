@@ -1,31 +1,42 @@
-"""
-Plex Radio Player - Core Functionality
+#!/usr/bin/env python3
 
-This module handles the core radio functionality including audio playback,
-API communication, button interactions, and station management.
-The display functionality has been separated into display_manager.py
+"""
+Plex Radio Client - A radio client for interacting with a Plex Media Server
+Supports physical buttons via GPIO, I2C LCD display, and audio streaming
 """
 
+import os
 import time
 import json
-import requests
+import signal
+import sys
+import subprocess
 import threading
 import shutil
-import subprocess
-import os
+from datetime import datetime
+from typing import Dict, Any, Optional, List
+
+# Third-party imports
+import requests
 from signal import pause
 
+# Local imports
 from display_manager import (
-    DisplayManager, 
-    create_display_manager, 
-    VolumeScreen, 
-    ChannelScreen, 
-    ErrorScreen,
-    GoodbyeScreen,
+    DisplayManager, I2CLCDDisplay, RadioScreen, 
+    VolumeScreen, ChannelScreen, ErrorScreen, GoodbyeScreen, create_display_manager
 )
+from config_manager import config
+
+# Hardcoded constants (not customizable via config)
+DEFAULT_STARTUP_VOLUME = 15  # Safe startup volume
+GPIO_BOUNCE_TIME = 0.01      # Button debounce time in seconds
+PERSISTENCE_FILE = 'last_channel.txt'  # Channel persistence file
+LCD_I2C_ADDRESS = 0x27       # I2C address for LCD display
+LCD_WIDTH = 16               # Display width in characters
+LCD_HEIGHT = 2               # Display height in lines
 
 # Simple logging control
-QUIET_MODE = os.getenv('RADIO_QUIET', 'true').lower() == 'true'
+QUIET_MODE = config.get('logging.quiet_mode', True)
 
 def log_info(message):
     """Always show important messages"""
@@ -38,7 +49,7 @@ def log_debug(message):
 
 def log_state(message):
     """Always show state changes"""
-    print(f"[STATE] {message}")
+    print(f"{message}")
 
 # Initialize GPIO buttons only if hardware is available
 radio_power_btn = None
@@ -52,22 +63,24 @@ def init_gpio_buttons():
     global radio_power_btn, volume_down_btn, volume_up_btn, channel_down_btn, channel_up_btn
     
     # Check if we should initialize hardware
-    hardware_mode = os.getenv('HARDWARE_MODE', 'true').lower() == 'true'
+    hardware_enabled = config.is_enabled('hardware.enabled')
     
-    if not hardware_mode:
-        print("Hardware mode disabled - GPIO buttons not initialized")
-        log_debug("Hardware mode disabled - GPIO buttons not initialized")
+    if not hardware_enabled:
+        print("Hardware mode disabled in configuration")
         return False
     
     try:
         from gpiozero import Button
         
-        # Define each button and the GPIO pin it's connected to
-        radio_power_btn = Button(25, bounce_time=0.01)   # Power On/Off
-        volume_down_btn = Button(24, bounce_time=0.01)   # Volume Down
-        volume_up_btn = Button(23, bounce_time=0.01)    # Volume Up
-        channel_down_btn = Button(15, bounce_time=0.01)  # Previous Channel
-        channel_up_btn = Button(14, bounce_time=0.01)    # Next Channel
+        # Get GPIO pin configuration from config
+        gpio_config = config.get_section('gpio')
+        
+        # Define each button and the GPIO pin it's connected to (using hardcoded bounce time)
+        radio_power_btn = Button(gpio_config.get('power_pin', 25), bounce_time=GPIO_BOUNCE_TIME)
+        volume_down_btn = Button(gpio_config.get('volume_down_pin', 24), bounce_time=GPIO_BOUNCE_TIME)
+        volume_up_btn = Button(gpio_config.get('volume_up_pin', 23), bounce_time=GPIO_BOUNCE_TIME)
+        channel_down_btn = Button(gpio_config.get('channel_down_pin', 15), bounce_time=GPIO_BOUNCE_TIME)
+        channel_up_btn = Button(gpio_config.get('channel_up_pin', 14), bounce_time=GPIO_BOUNCE_TIME)
         
         print("GPIO buttons initialized successfully")
         log_info("GPIO buttons initialized successfully")
@@ -82,10 +95,16 @@ def init_gpio_buttons():
 class PlexRadioClient:
     """Core radio client handling playback, channels, and API communication."""
     
-    def __init__(self, api_base_url="http://localhost:5000", display_manager=None):
+    def __init__(self, api_base_url=None, display_manager=None):
+        # Get API URL from config if not provided
+        if api_base_url is None:
+            api_base_url = config.get('api.base_url', 'http://localhost:5000')
+        
         self.api_base_url = api_base_url
         self.current_process = None
-        self.persistence_file = 'last_channel.txt'
+        
+        # Use hardcoded persistence file path
+        self.persistence_file = PERSISTENCE_FILE
         
         # Initialize display manager
         if display_manager is None:
@@ -204,9 +223,9 @@ class PlexRadioClient:
             print("Powering ON radio...")
             log_state("Radio turned ON")
             
-            # Set volume to 15% for safe startup (prevents loud volume on startup)
-            print("Setting volume to 15% for safe startup...")
-            set_volume(15)
+            # Set volume to safe startup level (hardcoded)
+            print(f"Setting volume to {DEFAULT_STARTUP_VOLUME}% for safe startup...")
+            set_volume(DEFAULT_STARTUP_VOLUME)
             
             # Clear any persistent error screens first
             self.display.clear_display()
@@ -366,9 +385,8 @@ if __name__ == "__main__":
         # Initialize GPIO buttons if hardware is available
         gpio_available = init_gpio_buttons()
         
-        # Initialize the radio client
-        api_url = os.getenv('PLEX_RADIO_API_URL', 'http://localhost:5000')
-        plex_radio = PlexRadioClient(api_base_url=api_url)
+        # Initialize the radio client (API URL will be read from config)
+        plex_radio = PlexRadioClient()
         
         # Check for ffplay dependency
         if not plex_radio.check_ffplay_available():

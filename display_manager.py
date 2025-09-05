@@ -10,35 +10,45 @@ import threading
 from datetime import datetime
 from typing import Dict, Any
 
+# Hardcoded display constants (not customizable via config)
+DEFAULT_I2C_ADDRESS = 0x27  # Standard I2C address for LCD displays
+LCD_WIDTH = 16              # Fixed width for 16x2 displays
+LCD_HEIGHT = 2              # Fixed height for 16x2 displays
+
 
 class I2CLCDDisplay:
     """16x2 I2C LCD Display Driver - fails if hardware not available."""
     
-    def __init__(self):
+    def __init__(self, i2c_address=None):
         """Initialize I2C LCD display. Raises exception if hardware not available."""
         try:
             from i2c_lcd import lcd
-            self.lcd = lcd()
+            if i2c_address:
+                # If a specific I2C address is provided, use it
+                self.lcd = lcd(i2c_address)
+            else:
+                # Use hardcoded default address
+                self.lcd = lcd(DEFAULT_I2C_ADDRESS)
         except ImportError:
             raise ImportError("i2c_lcd module not found. Please install the required LCD library.")
         except Exception as e:
             raise RuntimeError(f"Failed to initialize I2C LCD display: {e}")
         
-        # Fixed dimensions for 16x2 display
-        self.width = 16
-        self.height = 2
+        # Fixed dimensions for 16x2 display (hardcoded)
+        self.width = LCD_WIDTH
+        self.height = LCD_HEIGHT
         
         # Thread lock for display operations
         self._display_lock = threading.Lock()
         
         # Track current display state
-        self._current_lines = ["", ""]
+        self._current_lines = [""] * LCD_HEIGHT
         
         # Timing control for LCD operations
         self._last_operation_time = 0
         self._min_delay_between_operations = 0.015  # 15ms minimum delay
         
-        print("I2C LCD initialized: 16x2")
+        print(f"I2C LCD initialized: {LCD_WIDTH}x{LCD_HEIGHT}")
     
     def _safe_delay(self):
         """Ensure minimum delay between LCD operations to prevent corruption."""
@@ -300,11 +310,15 @@ class GoodbyeScreen(DisplayScreen):
 
 
 class DisplayManager:
-    """Manages the I2C LCD display and screen transitions."""
+    """Manages the LCD display and screen transitions."""
     
-    def __init__(self):
-        """Initialize display manager. Fails if I2C LCD not available."""
-        self.display = I2CLCDDisplay()
+    def __init__(self, i2c_address=None, use_mock=False):
+        """Initialize display manager with I2C LCD or mock display."""
+        if use_mock:
+            self.display = MockDisplayDriver()
+        else:
+            self.display = I2CLCDDisplay(i2c_address=i2c_address)
+        
         self.current_screen = None
         self.default_screen = RadioScreen()
         self.context = {}
@@ -312,7 +326,8 @@ class DisplayManager:
         # Thread safety
         self._update_lock = threading.Lock()
         
-        print("Display Manager initialized with I2C LCD")
+        display_type = "Mock Display" if use_mock else "I2C LCD"
+        print(f"Display Manager initialized with {display_type}")
     
     def show_screen(self, screen: DisplayScreen, clear_first: bool = True):
         """Show a specific screen."""
@@ -361,9 +376,59 @@ class DisplayManager:
             self.current_screen = None
 
 
+class MockDisplayDriver:
+    """Mock display driver for testing when hardware is not available."""
+    
+    def __init__(self, width=LCD_WIDTH, height=LCD_HEIGHT):
+        """Initialize mock display driver with hardcoded default dimensions."""
+        self.width = width
+        self.height = height
+        self._current_lines = [""] * height
+        print(f"Mock display initialized: {width}x{height}")
+    
+    def clear(self):
+        """Clear the mock display."""
+        self._current_lines = [""] * self.height
+        print("[DISPLAY] Screen cleared")
+    
+    def display_text(self, text: str, line: int):
+        """Display text on mock display."""
+        if 1 <= line <= self.height:
+            clean_text = str(text)[:self.width].ljust(self.width)
+            self._current_lines[line - 1] = clean_text
+            print(f"[DISPLAY] Line {line}: '{clean_text.strip()}'")
+    
+    def get_dimensions(self) -> tuple:
+        """Return display dimensions."""
+        return (self.width, self.height)
+
+
 def create_display_manager() -> DisplayManager:
-    """Create display manager with I2C LCD. Fails if hardware not available."""
-    return DisplayManager()
+    """Create display manager with I2C LCD or mock display based on configuration."""
+    # Import config here to avoid circular imports
+    try:
+        from config_manager import config
+        
+        # Check if display is enabled in configuration
+        if not config.is_enabled('display.enabled'):
+            print("[INFO] Display disabled in configuration, using mock display")
+            return DisplayManager(use_mock=True)
+        
+        # Try to create I2C display
+        try:            
+            print(f"[INFO] Initializing I2C display with address: {hex(DEFAULT_I2C_ADDRESS)}")
+            
+            return DisplayManager(i2c_address=DEFAULT_I2C_ADDRESS, use_mock=False)
+            
+        except Exception as i2c_error:
+            print(f"[WARNING] I2C display initialization failed: {i2c_error}")
+            print("[INFO] Falling back to mock display")
+            return DisplayManager(use_mock=True)
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to create display manager: {e}")
+        print("[INFO] Using mock display as fallback")
+        return DisplayManager(use_mock=True)
 
 
 # Legacy compatibility - remove mock support
