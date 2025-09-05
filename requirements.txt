@@ -11,7 +11,6 @@ requests==2.32.5
 smbus-cffi==0.5.1
 urllib3==2.5.0
 
-
 # Optional dependencies for different display types
 # Uncomment as needed for your display configuration
 

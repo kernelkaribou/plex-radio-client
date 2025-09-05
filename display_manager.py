@@ -533,8 +533,13 @@ class DisplayManager:
 # Convenience functions for common display operations
 def create_i2c_display_manager() -> DisplayManager:
     """Create a display manager with I2C LCD driver."""
-    driver = I2CLCDDriver()
-    return DisplayManager(driver)
+    try:
+        driver = I2CLCDDriver()
+        return DisplayManager(driver)
+    except (ImportError, OSError) as e:
+        print(f"I2C LCD initialization failed: {e}")
+        print("Falling back to mock display driver")
+        return create_mock_display_manager()
 
 
 def create_mock_display_manager(width: int = 16, height: int = 2) -> DisplayManager:

@@ -12,7 +12,7 @@ import requests
 import threading
 import shutil
 import subprocess
-from gpiozero import Button
+import os
 from signal import pause
 
 from display_manager import (
@@ -24,13 +24,41 @@ from display_manager import (
     GoodbyeScreen
 )
 
+# Initialize GPIO buttons only if hardware is available
+radio_power_btn = None
+volume_down_btn = None
+volume_up_btn = None
+channel_down_btn = None
+channel_up_btn = None
 
-# Define each button and the GPIO pin it's connected to
-radio_power_btn = Button(25, bounce_time=0.01)   # Power On/Off
-volume_down_btn = Button(24, bounce_time=0.01)   # Volume Down
-volume_up_btn = Button(23, bounce_time=0.01)    # Volume Up
-channel_down_btn = Button(15, bounce_time=0.01)  # Previous Channel
-channel_up_btn = Button(14, bounce_time=0.01)    # Next Channel
+def init_gpio_buttons():
+    """Initialize GPIO buttons if hardware is available."""
+    global radio_power_btn, volume_down_btn, volume_up_btn, channel_down_btn, channel_up_btn
+    
+    # Check if we should initialize hardware
+    hardware_mode = os.getenv('HARDWARE_MODE', 'true').lower() == 'true'
+    
+    if not hardware_mode:
+        print("Hardware mode disabled - GPIO buttons not initialized")
+        return False
+    
+    try:
+        from gpiozero import Button
+        
+        # Define each button and the GPIO pin it's connected to
+        radio_power_btn = Button(25, bounce_time=0.01)   # Power On/Off
+        volume_down_btn = Button(24, bounce_time=0.01)   # Volume Down
+        volume_up_btn = Button(23, bounce_time=0.01)    # Volume Up
+        channel_down_btn = Button(15, bounce_time=0.01)  # Previous Channel
+        channel_up_btn = Button(14, bounce_time=0.01)    # Next Channel
+        
+        print("GPIO buttons initialized successfully")
+        return True
+        
+    except Exception as e:
+        print(f"GPIO initialization failed: {e}")
+        print("Running without physical button support")
+        return False
 
 
 class PlexRadioClient:
@@ -303,11 +331,16 @@ def manage_playback(radio_client):
 
 # --- Main Execution ---
 if __name__ == "__main__":
+    plex_radio = None
     try:
         print("Radio starting... Press Ctrl+C to exit.")
         
+        # Initialize GPIO buttons if hardware is available
+        gpio_available = init_gpio_buttons()
+        
         # Initialize the radio client
-        plex_radio = PlexRadioClient()
+        api_url = os.getenv('PLEX_RADIO_API_URL', 'http://localhost:5000')
+        plex_radio = PlexRadioClient(api_base_url=api_url)
         
         # Check for ffplay dependency
         if not plex_radio.check_ffplay_available():
@@ -317,12 +350,16 @@ if __name__ == "__main__":
             time.sleep(5)  # Show error for 5 seconds before exiting
             exit()
         
-        # Assign button actions
-        radio_power_btn.when_pressed = plex_radio.toggle_power
-        volume_down_btn.when_pressed = lambda: adjust_volume(-1, plex_radio)
-        volume_up_btn.when_pressed = lambda: adjust_volume(1, plex_radio)
-        channel_down_btn.when_pressed = lambda: plex_radio.change_channel(-1)
-        channel_up_btn.when_pressed = lambda: plex_radio.change_channel(1)
+        # Assign button actions only if GPIO is available
+        if gpio_available and all([radio_power_btn, volume_down_btn, volume_up_btn, channel_down_btn, channel_up_btn]):
+            radio_power_btn.when_pressed = plex_radio.toggle_power
+            volume_down_btn.when_pressed = lambda: adjust_volume(-1, plex_radio)
+            volume_up_btn.when_pressed = lambda: adjust_volume(1, plex_radio)
+            channel_down_btn.when_pressed = lambda: plex_radio.change_channel(-1)
+            channel_up_btn.when_pressed = lambda: plex_radio.change_channel(1)
+            print("Button handlers assigned")
+        else:
+            print("Running without button support - use API or keyboard controls")
         
         # Start background threads for display and playback management
         display_thread = threading.Thread(target=manage_display, args=(plex_radio,), daemon=True)
@@ -330,35 +367,46 @@ if __name__ == "__main__":
         display_thread.start()
         playback_thread.start()
         
-        # Keep the main thread alive, waiting for button presses or KeyboardInterrupt
-        pause()
+        # Keep the main thread alive
+        if gpio_available:
+            # Wait for button presses or KeyboardInterrupt
+            pause()
+        else:
+            # Without GPIO, just wait for KeyboardInterrupt
+            print("No GPIO buttons available. Use Ctrl+C to exit.")
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                pass
         
     except KeyboardInterrupt:
         print("\nExiting script.")
     
     finally:
-        # Signal background threads to stop
-        print("Stopping background threads...")
-        plex_radio.shutdown_requested = True
-        
-        # Give threads a moment to stop
-        time.sleep(0.5)
-        
-        plex_radio.stop_current_playback()
-        
-        # Show goodbye message using the display manager
-        goodbye_screen = GoodbyeScreen(display_duration=1.5)
-        plex_radio.display.show_screen(goodbye_screen)
-        
-        # Keep updating display to show goodbye message
-        start_time = time.time()
-        while time.time() - start_time < 1.5:
-            plex_radio.display.update_display()
-            time.sleep(0.05)
-        
-        # Now clear the display - threads are stopped so nothing will overwrite it
-        print("Clearing display...")
-        plex_radio.display.clear_display()
-        time.sleep(0.2)
+        if plex_radio:
+            # Signal background threads to stop
+            print("Stopping background threads...")
+            plex_radio.shutdown_requested = True
+            
+            # Give threads a moment to stop
+            time.sleep(0.5)
+            
+            plex_radio.stop_current_playback()
+            
+            # Show goodbye message using the display manager
+            goodbye_screen = GoodbyeScreen(display_duration=1.5)
+            plex_radio.display.show_screen(goodbye_screen)
+            
+            # Keep updating display to show goodbye message
+            start_time = time.time()
+            while time.time() - start_time < 1.5:
+                plex_radio.display.update_display()
+                time.sleep(0.05)
+            
+            # Now clear the display - threads are stopped so nothing will overwrite it
+            print("Clearing display...")
+            plex_radio.display.clear_display()
+            time.sleep(0.2)
         
         print("Shutdown complete.")

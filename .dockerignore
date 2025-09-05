@@ -1,0 +1,50 @@
+# Docker ignore file for plex-radio-player
+# Ignore version control
+.git/
+.gitignore
+
+# Ignore Python cache and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+ENV/
+
+# Ignore IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore local runtime files
+last_channel.txt
+*.log
+*.logs
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore temporary files
+*.tmp
+*.temp
+
+# Ignore documentation files (keep README.md)
+docs/
+*.md
+!README.md
+
+# Ignore test files and coverage reports
+tests/
+*.coverage
+htmlcov/
+.pytest_cache/
+
+# Ignore local configuration files that shouldn't be in the container
+config.local.*
+.env.local

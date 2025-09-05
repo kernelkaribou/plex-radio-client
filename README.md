@@ -30,6 +30,36 @@ The Plex Radio Player Client is used for serving as a client for [Plex Radio](ht
 
 ## Quick Start
 
+### Docker (Recommended)
+
+The easiest way to run the Plex Radio Player is using Docker:
+
+```bash
+# Pull the latest image from GitHub Container Registry
+docker pull ghcr.io/kernelkaribou/plex-radio-client:latest
+
+# Run with basic settings (for Raspberry Pi with hardware)
+docker run -d \
+  --name plex-radio-client \
+  --privileged \
+  --network host \
+  --restart unless-stopped \
+  -v $(pwd)/last_channel.txt:/app/last_channel.txt \
+  -v /run/user/$(id -u)/pulse:/run/user/1000/pulse:rw \
+  -e PLEX_RADIO_API_URL=http://localhost:5000 \
+  ghcr.io/kernelkaribou/plex-radio-client:latest
+
+# Or use docker-compose
+git clone https://github.com/kernelkaribou/plex-radio-client.git
+cd plex-radio-client
+export UID=$(id -u) && export GID=$(id -g)
+docker-compose up -d
+```
+
+📖 **See [DOCKER.md](DOCKER.md) for detailed Docker usage instructions.**
+
+### Local Python Installation
+
 ### Using the Refactored System
 
 ```python
@@ -188,12 +218,19 @@ plex_radio = PlexRadioClient(display_manager=display_manager)
 
 ```
 plex-radio-player/
-├── radio_client.py              # radio core
+├── .github/workflows/
+│   └── docker-build.yml         # GitHub Actions workflow
+├── radio_client.py              # Radio core
 ├── display_manager.py           # Display system library
 ├── display_config_examples.py   # Configuration examples
 ├── last_channel.txt             # Persistence file
 ├── requirements.txt             # Dependencies
-└── README.md           # This documentation
+├── Dockerfile                   # Container build instructions
+├── docker-compose.yml           # Docker Compose configuration
+├── entrypoint.sh               # Container startup script
+├── Makefile                    # Build automation
+├── DOCKER.md                   # Docker usage guide
+└── README.md                   # This documentation
 ```
 
 ## Dependencies
