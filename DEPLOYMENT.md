@@ -109,7 +109,6 @@ Your images are automatically published to:
 
 Available tags:
 - `latest`: Latest build from main branch
-- `docker_build`: Latest build from docker_build branch
 - `v1.0.0`: Tagged releases (when you create Git tags)
 
 ## 🔄 Automated Workflows
@@ -117,7 +116,7 @@ Available tags:
 The GitHub Actions workflow (`/.github/workflows/docker-build.yml`) will:
 
 1. **Trigger on**:
-   - Push to `main`, `master`, or `docker_build` branches  
+   - Push to `main` or `master` branches  
    - New Git tags starting with `v*`
    - Pull requests (build only, no publish)
 
