@@ -1,0 +1,12 @@
+# Plex Radio Client Configuration
+api:
+  base_url: "http://localhost:5000"
+
+# GPIO Pin Mapping
+gpio:
+  power_pin: 1
+  volume_up_pin: 2
+  volume_down_pin: 3
+  channel_up_pin: 4
+  channel_down_pin: 5
+ß
