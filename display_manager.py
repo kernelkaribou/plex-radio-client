@@ -251,6 +251,54 @@ class ChannelScreen(DisplayScreen):
         return (time.time() - self.start_time) < self.duration
 
 
+class ErrorScreen(DisplayScreen):
+    """Error message display screen."""
+    
+    def __init__(self, error_message: str, duration: float = 3.0, persistent: bool = False):
+        super().__init__("error")
+        self.error_message = error_message
+        self.duration = duration
+        self.persistent = persistent
+        self.start_time = None
+    
+    def render(self, display: I2CLCDDisplay, context: Dict[str, Any]) -> bool:
+        if self.start_time is None:
+            self.start_time = time.time()
+        
+        line1 = "Error:".center(16)
+        line2 = str(self.error_message)[:16].center(16)
+        
+        display.display_text(line1, 1)
+        display.display_text(line2, 2)
+        
+        # If persistent, stay on screen indefinitely
+        if self.persistent:
+            return True
+        
+        return (time.time() - self.start_time) < self.duration
+
+
+class GoodbyeScreen(DisplayScreen):
+    """Goodbye message display screen."""
+    
+    def __init__(self, duration: float = 2.0):
+        super().__init__("goodbye")
+        self.duration = duration
+        self.start_time = None
+    
+    def render(self, display: I2CLCDDisplay, context: Dict[str, Any]) -> bool:
+        if self.start_time is None:
+            self.start_time = time.time()
+        
+        line1 = "Goodbye!".center(16)
+        line2 = "".center(16)  # Empty second line
+        
+        display.display_text(line1, 1)
+        display.display_text(line2, 2)
+        
+        return (time.time() - self.start_time) < self.duration
+
+
 class DisplayManager:
     """Manages the I2C LCD display and screen transitions."""
     

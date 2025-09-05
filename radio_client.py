@@ -20,6 +20,8 @@ from display_manager import (
     create_display_manager, 
     VolumeScreen, 
     ChannelScreen, 
+    ErrorScreen,
+    GoodbyeScreen,
 )
 
 # Simple logging control
@@ -182,7 +184,7 @@ class PlexRadioClient:
             cmd.extend(['-ss', str(song_info["start_time"])])
         
         print(f"Playing: {song_info.get('title')} by {song_info.get('artist')}")
-        log_state(f"♪ Now Playing: {song_info.get('title')} by {song_info.get('artist')}")
+        log_state(f"Now Playing: {song_info.get('title')} by {song_info.get('artist')}")
         self.current_process = subprocess.Popen(cmd)
         return True
     
@@ -192,7 +194,7 @@ class PlexRadioClient:
         if self.is_playing:
             # --- TURNING RADIO OFF ---
             print("Powering OFF radio...")
-            log_state("📻 Radio turned OFF")
+            log_state("Radio turned OFF")
             self.is_playing = False
             self.stop_current_playback()
             self.last_song_title = None
@@ -200,7 +202,7 @@ class PlexRadioClient:
         else:
             # --- TURNING RADIO ON ---
             print("Powering ON radio...")
-            log_state("📻 Radio turned ON")
+            log_state("Radio turned ON")
             
             # Set volume to 15% for safe startup (prevents loud volume on startup)
             print("Setting volume to 15% for safe startup...")
@@ -246,7 +248,7 @@ class PlexRadioClient:
         
         channel_name = self.channels[self.current_channel].get('name', f"Channel {self.current_channel}")
         print(f"Switched to channel: {channel_name}")
-        log_state(f"📻 Switched to channel: {channel_name}")
+        log_state(f"Switched to channel: {channel_name}")
         
         # Show channel change screen
         channel_screen = ChannelScreen()
@@ -297,7 +299,7 @@ def adjust_volume(direction, radio_client):
                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
     # Log volume change
-    volume_change = "🔊 Volume UP" if direction > 0 else "🔉 Volume DOWN"
+    volume_change = "Volume UP" if direction > 0 else "Volume DOWN"
     log_state(f"{volume_change} - Current: {get_current_volume()}")
     
     # Show volume screen
