@@ -164,22 +164,25 @@ class I2CLCDDriver(DisplayDriver):
 class MockDisplayDriver(DisplayDriver):
     """Mock driver for testing without actual hardware."""
     
-    def __init__(self, width: int = 16, height: int = 2):
+    def __init__(self, width: int = 16, height: int = 2, verbose: bool = False):
         self.width = width
         self.height = height
+        self.verbose = verbose
         self.lines = [""] * height
         print(f"Mock Display initialized: {width}x{height}")
     
     def clear(self):
         """Clear the mock display."""
         self.lines = [""] * self.height
-        print("Display cleared")
+        # Don't print every clear operation
     
     def display_text(self, text: str, line: int):
         """Display text on the specified line."""
         if 1 <= line <= self.height:
             self.lines[line - 1] = text
-            print(f"Line {line}: '{text}'")
+            # Only print if verbose mode is enabled
+            if self.verbose:
+                print(f"Line {line}: '{text}'")
     
     def get_dimensions(self) -> tuple:
         """Return (width, height) of the display."""
@@ -544,7 +547,9 @@ def create_i2c_display_manager() -> DisplayManager:
 
 def create_mock_display_manager(width: int = 16, height: int = 2) -> DisplayManager:
     """Create a display manager with mock driver for testing."""
-    driver = MockDisplayDriver(width, height)
+    import os
+    verbose = os.getenv('DISPLAY_VERBOSE', 'false').lower() == 'true'
+    driver = MockDisplayDriver(width, height, verbose=verbose)
     return DisplayManager(driver)
 
 

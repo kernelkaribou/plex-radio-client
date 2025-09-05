@@ -95,6 +95,11 @@ docker run -d --privileged --network host plex-radio-client
 ### Environment Variables
 - `PLEX_RADIO_API_URL`: API server URL (default: http://localhost:5000)
 - `HARDWARE_MODE`: Enable/disable GPIO hardware (default: true)
+- `GPIO_POWER_PIN`: GPIO pin for power button (default: 25)
+- `GPIO_VOLUME_UP_PIN`: GPIO pin for volume up button (default: 23)
+- `GPIO_VOLUME_DOWN_PIN`: GPIO pin for volume down button (default: 24)
+- `GPIO_CHANNEL_UP_PIN`: GPIO pin for channel up button (default: 14)
+- `GPIO_CHANNEL_DOWN_PIN`: GPIO pin for channel down button (default: 15)
 - `PULSE_SERVER`: PulseAudio server if needed
 
 ### Volume Mounts

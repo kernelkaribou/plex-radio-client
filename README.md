@@ -34,6 +34,8 @@ The Plex Radio Player Client is used for serving as a client for [Plex Radio](ht
 
 The easiest way to run the Plex Radio Player is using Docker:
 
+#### Quick Start with Pre-built Images
+
 ```bash
 # Pull the latest image from GitHub Container Registry
 docker pull ghcr.io/kernelkaribou/plex-radio-client:latest
@@ -48,15 +50,78 @@ docker run -d \
   -v /run/user/$(id -u)/pulse:/run/user/1000/pulse:rw \
   -e PLEX_RADIO_API_URL=http://localhost:5000 \
   ghcr.io/kernelkaribou/plex-radio-client:latest
+```
 
-# Or use docker-compose
+#### Docker Compose (Recommended for Development)
+
+```bash
+# Clone the repository for docker-compose.yml
 git clone https://github.com/kernelkaribou/plex-radio-client.git
 cd plex-radio-client
-export UID=$(id -u) && export GID=$(id -g)
+
+# Set your user ID for proper permissions
+export UID=$(id -u)
+export GID=$(id -g)
+
+# Start the service
 docker-compose up -d
 ```
 
-📖 **See [DOCKER.md](DOCKER.md) for detailed Docker usage instructions.**
+#### Configuration
+
+**Environment Variables:**
+- `PLEX_RADIO_API_URL`: URL of the Plex Radio API server (default: `http://localhost:5000`)
+- `HARDWARE_MODE`: Set to `false` to disable GPIO/I2C hardware access (default: `true`)
+- `GPIO_POWER_PIN`: GPIO pin for power button (default: `25`)
+- `GPIO_VOLUME_UP_PIN`: GPIO pin for volume up button (default: `23`)
+- `GPIO_VOLUME_DOWN_PIN`: GPIO pin for volume down button (default: `24`)
+- `GPIO_CHANNEL_UP_PIN`: GPIO pin for channel up button (default: `14`)
+- `GPIO_CHANNEL_DOWN_PIN`: GPIO pin for channel down button (default: `15`)
+- `RADIO_QUIET`: Set to `true` for minimal logging (state changes only), `false` for debug output (default: `false`)
+- `DISPLAY_VERBOSE`: Set to `true` to see all LCD display line updates (default: `false`)
+- `PULSE_SERVER`: PulseAudio server address if needed
+
+**Volume Mounts:**
+- `/app/last_channel.txt`: Persists the last selected channel
+- `/run/user/1000/pulse`: PulseAudio socket for audio output
+- `/dev/i2c-1` and `/dev/gpiomem`: Hardware device access for Raspberry Pi
+
+#### Testing Without Hardware
+
+For development/testing without physical hardware:
+
+```bash
+docker run -it \
+  --name plex-radio-test \
+  -e HARDWARE_MODE=false \
+  -e PLEX_RADIO_API_URL=http://host.docker.internal:5000 \
+  ghcr.io/kernelkaribou/plex-radio-client:latest
+```
+
+#### Custom GPIO Pin Configuration
+
+```bash
+docker run -d \
+  --name plex-radio-client \
+  --privileged \
+  --network host \
+  -e PLEX_RADIO_API_URL=http://localhost:5000 \
+  -e GPIO_POWER_PIN=26 \
+  -e GPIO_VOLUME_UP_PIN=19 \
+  -e GPIO_VOLUME_DOWN_PIN=13 \
+  -e GPIO_CHANNEL_UP_PIN=6 \
+  -e GPIO_CHANNEL_DOWN_PIN=5 \
+  ghcr.io/kernelkaribou/plex-radio-client:latest
+```
+
+#### Multi-Architecture Support
+
+The container supports multiple architectures:
+- `linux/amd64` (x86_64)
+- `linux/arm64` (ARM 64-bit, Raspberry Pi 4/5)
+- `linux/arm/v7` (ARM 32-bit, Raspberry Pi 2/3)
+
+Docker will automatically pull the correct architecture for your system.
 
 ### Local Python Installation
 

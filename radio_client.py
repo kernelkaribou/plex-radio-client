@@ -2,7 +2,8 @@
 Plex Radio Player - Core Functionality
 
 This module handles the core radio functionality including audio playback,
-API communication, button interactions, and station management.
+API communicatio            print("Stopping current playback...")
+            log_debug("Stopping current playback"), button interactions, and station management.
 The display functionality has been separated into display_manager.py
 """
 
@@ -24,6 +25,22 @@ from display_manager import (
     GoodbyeScreen
 )
 
+# Simple logging control
+QUIET_MODE = os.getenv('RADIO_QUIET', 'true').lower() == 'true'
+
+def log_info(message):
+    """Always show important messages"""
+    print(f"[INFO] {message}")
+
+def log_debug(message):
+    """Only show debug messages if not in quiet mode"""
+    if not QUIET_MODE:
+        print(f"[DEBUG] {message}")
+
+def log_state(message):
+    """Always show state changes"""
+    print(f"[STATE] {message}")
+
 # Initialize GPIO buttons only if hardware is available
 radio_power_btn = None
 volume_down_btn = None
@@ -40,6 +57,7 @@ def init_gpio_buttons():
     
     if not hardware_mode:
         print("Hardware mode disabled - GPIO buttons not initialized")
+        log_debug("Hardware mode disabled - GPIO buttons not initialized")
         return False
     
     try:
@@ -53,6 +71,7 @@ def init_gpio_buttons():
         channel_up_btn = Button(14, bounce_time=0.01)    # Next Channel
         
         print("GPIO buttons initialized successfully")
+        log_info("GPIO buttons initialized successfully")
         return True
         
     except Exception as e:
@@ -94,6 +113,7 @@ class PlexRadioClient:
                 channel = int(f.read().strip())
                 self.current_channel = channel
                 print(f"Loaded last used channel: {self.current_channel}")
+                log_debug(f"Loaded last used channel: {self.current_channel}")
         except (FileNotFoundError, ValueError):
             print("Last channel file not found or invalid. Defaulting to channel 0.")
             self.current_channel = 0
@@ -131,6 +151,7 @@ class PlexRadioClient:
             response.raise_for_status()
             data = response.json()
             print(f"Loaded {len(data.get('data', []))} channels.")
+            log_info(f"Loaded {len(data.get('data', []))} channels from API")
             return data.get("data") if data.get("status") == "success" else []
         except requests.exceptions.RequestException as e:
             print(f"Error fetching channels: {e}")
@@ -164,6 +185,7 @@ class PlexRadioClient:
             cmd.extend(['-ss', str(song_info["start_time"])])
         
         print(f"Playing: {song_info.get('title')} by {song_info.get('artist')}")
+        log_state(f"♪ Now Playing: {song_info.get('title')} by {song_info.get('artist')}")
         self.current_process = subprocess.Popen(cmd)
         return True
     
@@ -173,6 +195,7 @@ class PlexRadioClient:
         if self.is_playing:
             # --- TURNING RADIO OFF ---
             print("Powering OFF radio...")
+            log_state("📻 Radio turned OFF")
             self.is_playing = False
             self.stop_current_playback()
             self.last_song_title = None
@@ -180,6 +203,7 @@ class PlexRadioClient:
         else:
             # --- TURNING RADIO ON ---
             print("Powering ON radio...")
+            log_state("📻 Radio turned ON")
             
             # Set volume to 15% for safe startup (prevents loud volume on startup)
             print("Setting volume to 15% for safe startup...")
@@ -225,6 +249,7 @@ class PlexRadioClient:
         
         channel_name = self.channels[self.current_channel].get('name', f"Channel {self.current_channel}")
         print(f"Switched to channel: {channel_name}")
+        log_state(f"📻 Switched to channel: {channel_name}")
         
         # Show channel change screen
         channel_screen = ChannelScreen()
@@ -273,6 +298,10 @@ def adjust_volume(direction, radio_client):
     
     subprocess.run(['pactl', 'set-sink-volume', '@DEFAULT_SINK@', f"{'+' if direction > 0 else '-'}5%"], 
                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    
+    # Log volume change
+    volume_change = "🔊 Volume UP" if direction > 0 else "🔉 Volume DOWN"
+    log_state(f"{volume_change} - Current: {get_current_volume()}")
     
     # Show volume screen
     volume_screen = VolumeScreen()

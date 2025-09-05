@@ -5,13 +5,23 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: plex-radio-client:latest
+    # image: plex-radio-client:latest
     container_name: plex-radio-client
     restart: unless-stopped
     
     # Environment variables (customize as needed)
     environment:
-      - PLEX_RADIO_API_URL=http://host.docker.internal:5000
+      - PLEX_RADIO_API_URL=http://serv03.home.lan:5000
+      # GPIO pin configuration (uncomment and customize as needed)
+      - GPIO_POWER_PIN=25
+      - GPIO_VOLUME_UP_PIN=23
+      - GPIO_VOLUME_DOWN_PIN=24
+      - GPIO_CHANNEL_UP_PIN=14
+      - GPIO_CHANNEL_DOWN_PIN=15
+      - HARDWARE_MODE=true
+      # Logging configuration
+      - RADIO_QUIET=true           # Set to false for debug output
+      - DISPLAY_VERBOSE=false      # Set to true to see all display updates
     
     # Volume mounts for persistence and device access
     volumes:
@@ -36,11 +46,3 @@ services:
     
     # User mapping for audio access
     user: "${UID:-1000}:${GID:-1000}"
-    
-    # Health check
-    healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/health', timeout=5)"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
