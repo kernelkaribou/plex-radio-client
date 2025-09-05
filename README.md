@@ -17,6 +17,22 @@ The application consists of:
 
 ## Quick Start
 
+### Running as a Service (Recommended)
+
+For automatic startup on boot and crash recovery, install as a systemd service:
+
+```bash
+# Install and start the service
+cd service
+./install-service.sh
+
+# Use the service manager for control
+./radio-service.sh start    # Start service
+./radio-service.sh stop     # Stop service
+./radio-service.sh status   # Check status
+./radio-service.sh logs     # View logs
+```
+
 ### Installation
 
 1. **Install dependencies:**
@@ -30,35 +46,13 @@ The application consists of:
    # Interface Options -> I2C -> Enable
    ```
 
-3. **Configure API URL:**
-   Edit `config.yaml` and set your Plex Radio server URL:
-   ```yaml
-   api:
-     base_url: "http://your-server:5000"
-   ```
+3. **Configuration:**
+   Copy `example_radio_server_config.yaml` to `radio_server_config.yaml`, provide the plex-server-api URL and GPIO pin configurations
 
 4. **Run the application:**
    ```bash
    python3 radio_client.py
    ```
-
-### Configuration
-
-Edit `config.yaml` to customize:
-
-```yaml
-# API Configuration
-api:
-  base_url: "http://localhost:5000"
-
-# GPIO Pin Mapping
-gpio:
-  power_pin: 25        # Power On/Off button
-  volume_up_pin: 23    # Volume Up button  
-  volume_down_pin: 24  # Volume Down button
-  channel_up_pin: 14   # Next Channel button
-  channel_down_pin: 15 # Previous Channel button
-```
 
 ## Features
 
@@ -91,9 +85,12 @@ plex-radio-player/
 ├── radio_client.py      # Main application
 ├── display_manager.py   # Display manager
 ├── clear_screen.py      # LCD clear utility
-├── config.yaml          # Configuration file
+├── example_radio_server_config.yaml          # Configuration file
 ├── last_channel.txt     # Channel persistence
 ├── requirements.txt     # Dependencies
+├── service/             # Service management files
+│   ├── install-service.sh     # Service installation script
+│   ├── radio-service.sh       # Service management utility
 └── README.md            # This documentation
 ```
 

@@ -3,3 +3,7 @@ gpiozero==2.0.1
 i2c-lcd==0.1.0
 requests==2.32.5
 PyYAML>=6.0.0
+
+# GPIO libraries for Raspberry Pi
+RPi.GPIO>=0.7.0
+lgpio>=0.2.0
