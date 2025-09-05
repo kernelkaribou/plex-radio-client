@@ -1,0 +1,27 @@
+# Plex Radio Client Configuration
+# This file contains all configuration settings for the radio client
+
+# API Configuration
+api:
+  base_url: "http://serv03.home.lan:5000"
+
+# Hardware Configuration
+hardware:
+  enabled: true  # Set to false to disable GPIO hardware support
+  
+# GPIO Pin Mapping
+gpio:
+  power_pin: 25        # Power On/Off button
+  volume_up_pin: 23    # Volume Up button  
+  volume_down_pin: 24  # Volume Down button
+  channel_up_pin: 14   # Next Channel button
+  channel_down_pin: 15 # Previous Channel button
+
+# Display Configuration
+display:
+  enabled: true        # Set to false to disable I2C display
+
+# Logging Configuration
+logging:
+  quiet_mode: true     # Set to false for debug output
+  log_level: "INFO"    # DEBUG, INFO, WARNING, ERROR
