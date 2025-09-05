@@ -423,7 +423,7 @@ if __name__ == "__main__":
             plex_radio.stop_current_playback()
             
             # Show goodbye message using the display manager
-            goodbye_screen = GoodbyeScreen(display_duration=1.5)
+            goodbye_screen = GoodbyeScreen(duration=1.5)
             plex_radio.display.show_screen(goodbye_screen)
             
             # Keep updating display to show goodbye message
