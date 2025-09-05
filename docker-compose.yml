@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   plex-radio-client:
     build:
@@ -18,7 +16,7 @@ services:
       - GPIO_VOLUME_DOWN_PIN=24
       - GPIO_CHANNEL_UP_PIN=14
       - GPIO_CHANNEL_DOWN_PIN=15
-      - HARDWARE_MODE=true
+      - HARDWARE_MODE=false        # Set to true only if you have GPIO hardware properly configured
       # Logging configuration
       - RADIO_QUIET=true           # Set to false for debug output
       - DISPLAY_VERBOSE=false      # Set to true to see all display updates
@@ -32,11 +30,17 @@ services:
       # Mount I2C devices if needed
       - /dev/i2c-1:/dev/i2c-1:rw
       - /dev/gpiomem:/dev/gpiomem:rw
+      # Mount additional GPIO devices for different systems
+      - /dev/gpiomem0:/dev/gpiomem0:rw
+      - /dev/gpiochip0:/dev/gpiochip0:rw
     
     # Device access for GPIO and I2C
     devices:
       - /dev/i2c-1:/dev/i2c-1
       - /dev/gpiomem:/dev/gpiomem
+      # Additional GPIO devices for different systems
+      - /dev/gpiomem0:/dev/gpiomem0
+      - /dev/gpiochip0:/dev/gpiochip0
     
     # Network mode to access host services
     network_mode: "host"

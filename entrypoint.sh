@@ -6,11 +6,18 @@ set -e
 echo "Starting Plex Radio Player..."
 
 # Check if running on actual hardware vs in a container
-if [ -e /dev/gpiomem ] && [ -e /dev/i2c-1 ]; then
-    echo "Hardware detected - GPIO and I2C devices available"
-    # Don't override HARDWARE_MODE if user explicitly set it
-    if [ -z "$HARDWARE_MODE" ]; then
-        export HARDWARE_MODE=true
+if [ -e /dev/gpiomem ] || [ -e /dev/gpiomem0 ] || [ -e /dev/gpiochip0 ]; then
+    if [ -e /dev/i2c-1 ]; then
+        echo "Hardware detected - GPIO and I2C devices available"
+        # Don't override HARDWARE_MODE if user explicitly set it
+        if [ -z "$HARDWARE_MODE" ]; then
+            export HARDWARE_MODE=true
+        fi
+    else
+        echo "GPIO detected but no I2C - limited hardware mode"
+        if [ -z "$HARDWARE_MODE" ]; then
+            export HARDWARE_MODE=true
+        fi
     fi
 else
     echo "No hardware detected - running in mock mode"
