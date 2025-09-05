@@ -315,29 +315,76 @@ Additional dependencies for custom drivers (optional):
 
 ## Troubleshooting
 
+### I2C LCD Display Issues
+
+1. **Display corrupted or frozen**:
+   ```bash
+   # Clear the display directly
+   python3 clear_screen.py
+   
+   # Or from Docker container
+   docker exec plex-radio-client python3 clear_screen.py
+   ```
+
+2. **I2C LCD not detected**:
+   - Ensure I2C is enabled on your system
+   - Check device permissions: `ls -la /dev/i2c-*`
+   - Verify LCD is connected and powered
+   - Test I2C detection: `i2cdetect -y 1`
+
+3. **Permission denied on /dev/i2c-1**:
+   - Add user to i2c group: `sudo usermod -a -G i2c $USER`
+   - Or run with sudo (not recommended for production)
+
+4. **Application fails to start**:
+   - This is expected behavior if no I2C LCD is detected
+   - The application requires hardware I2C LCD to operate
+   - Check that `i2c-lcd` Python module is installed
+
+### Screen Clear Utility
+
+The `clear_screen.py` script provides a quick way to reset the I2C LCD display:
+
+```bash
+# Direct usage
+python3 clear_screen.py
+
+# Docker container usage  
+docker exec plex-radio-client python3 clear_screen.py
+
+# Make executable for convenience
+chmod +x clear_screen.py
+./clear_screen.py
+```
+
+This utility:
+- Clears the entire display
+- Shows a brief "Screen Cleared" message
+- Performs a final clear
+- Exits with proper error codes
+
 ### Common Issues
 
 1. **Import Error for i2c_lcd**:
-   - Ensure the `i2c_lcd` module is available
-   - Use `MockDisplayDriver` for testing without hardware
+   ```bash
+   pip install i2c-lcd
+   ```
 
-2. **Display not updating**:
-   - Check that `update_display()` is being called regularly
-   - Verify display driver implementation
-
-3. **Custom screens not working**:
-   - Ensure `render()` method returns `True` or `False` appropriately
-   - Check that context data is being provided correctly
+2. **GPIO button not responding**:
+   - Check GPIO pin configuration in environment variables
+   - Verify physical wiring matches configured pins
+   - Ensure GPIO permissions are correct
 
 ### Getting Help
 
-For display-related issues:
-1. Test with `MockDisplayDriver` first
-2. Check the examples in `display_config_examples.py`
-3. Verify your custom driver implements all required methods
+For hardware-related issues:
+1. Test I2C connectivity with `i2cdetect`
+2. Use the screen clear utility to reset display
+3. Check system logs for I2C/GPIO errors
 
-For radio functionality issues:
-1. Test API connectivity separately
+For API connectivity issues:
+1. Verify PLEX_RADIO_API_URL is correct
+2. Ensure Plex Radio server is running and accessible
 2. Check ffplay installation
 3. Verify GPIO button connections
 
