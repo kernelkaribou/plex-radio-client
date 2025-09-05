@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Plex Radio Player Client serves as a hardware client for [Plex Radio](https://github.com/cbattlegear/plex-radio). It requires a 16x2 I2C LCD display and will fail to start without one.
+The Plex Radio Player Client serves as a hardware client for [Plex Radio](https://github.com/cbattlegear/plex-radio). It requires a 16x2 I2C LCD display and five physical buttons to function.
 
 **Hardware Requirements:**
 - 16x2 I2C LCD Display (REQUIRED)
@@ -10,308 +10,92 @@ The Plex Radio Player Client serves as a hardware client for [Plex Radio](https:
 - I2C interface enabled
 - GPIO pins for buttons (configurable)
 
-The application is comprised of two components:
+The application consists of:
 
-1. **Radio Core** (`radio_client.py`) - Handles audio playback, API communication, and button interactions
-2. **Display Manager** (`display_manager.py`) - Manages the I2C LCD display with fail-safe operation
-
-## Architecture
-
-### Display System
-- **I2C LCD Only** - Exclusively supports 16x2 I2C LCD displays
-- **Fail-Safe Design** - Application exits if I2C LCD is not available
-- **No Mock/Fallback** - Requires actual hardware for operation
-
-#### Display Screens
-- `RadioScreen` - Shows channel name and current song with marquee scrolling
-- `VolumeScreen` - Temporary screen for volume changes
-- `ChannelScreen` - Temporary screen for channel changes
-- `ErrorScreen` - Shows error messages
-- Custom screens can be created by extending `DisplayScreen`
-
-#### DisplayManager
-- Coordinates between drivers and screens
-- Manages screen transitions and context updates
-- Handles temporary vs. permanent screens
+1. **Radio Core** (`radio_client.py`) - Handles audio playbook, API communication, and button interactions
+2. **Display Manager** (`display_manager.py`) - Manages the I2C LCD display
 
 ## Quick Start
 
-### Docker (Recommended)
+### Installation
 
-The easiest way to run the Plex Radio Player is using Docker:
+1. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-#### Quick Start with Pre-built Images
+2. **Enable I2C on Raspberry Pi:**
+   ```bash
+   sudo raspi-config
+   # Interface Options -> I2C -> Enable
+   ```
 
-```bash
-# Pull the latest image from GitHub Container Registry
-docker pull ghcr.io/kernelkaribou/plex-radio-client:latest
+3. **Configure API URL:**
+   Edit `config.yaml` and set your Plex Radio server URL:
+   ```yaml
+   api:
+     base_url: "http://your-server:5000"
+   ```
 
-# Run with basic settings (for Raspberry Pi with hardware)
-docker run -d \
-  --name plex-radio-client \
-  --privileged \
-  --network host \
-  --restart unless-stopped \
-  -v $(pwd)/last_channel.txt:/app/last_channel.txt \
-  -v /run/user/$(id -u)/pulse:/run/user/1000/pulse:rw \
-  -e PLEX_RADIO_API_URL=http://localhost:5000 \
-  ghcr.io/kernelkaribou/plex-radio-client:latest
+4. **Run the application:**
+   ```bash
+   python3 radio_client.py
+   ```
+
+### Configuration
+
+Edit `config.yaml` to customize:
+
+```yaml
+# API Configuration
+api:
+  base_url: "http://localhost:5000"
+
+# GPIO Pin Mapping
+gpio:
+  power_pin: 25        # Power On/Off button
+  volume_up_pin: 23    # Volume Up button  
+  volume_down_pin: 24  # Volume Down button
+  channel_up_pin: 14   # Next Channel button
+  channel_down_pin: 15 # Previous Channel button
 ```
 
-#### Docker Compose (Recommended for Development)
+## Features
 
-```bash
-# Clone the repository for docker-compose.yml
-git clone https://github.com/kernelkaribou/plex-radio-client.git
-cd plex-radio-client
+### Display Modes
+- **Radio ON:** Shows channel name and current song with marquee scrolling
+- **Radio OFF:** Shows live clock (24-hour format) and date (MM/DD/YYYY)
+- **Volume Control:** Temporary screen showing current volume level
+- **Channel Change:** Temporary screen showing channel name
+- **Error Messages:** Clear error display for troubleshooting
 
-# Set your user ID for proper permissions
-export UID=$(id -u)
-export GID=$(id -g)
+### Controls
+- **Power Button:** Toggle radio on/off
+- **Volume Buttons:** Adjust system volume by 5% increments
+- **Channel Buttons:** Navigate through available channels
+- **Channel Persistence:** Remembers last selected channel
 
-# Start the service
-docker-compose up -d
-```
+## Dependencies
 
-#### Configuration
+The application requires only these essential packages:
 
-**Environment Variables:**
-- `PLEX_RADIO_API_URL`: URL of the Plex Radio API server (default: `http://localhost:5000`)
-- `HARDWARE_MODE`: Set to `false` to disable GPIO/I2C hardware access (default: `true`)
-- `GPIO_POWER_PIN`: GPIO pin for power button (default: `25`)
-- `GPIO_VOLUME_UP_PIN`: GPIO pin for volume up button (default: `23`)
-- `GPIO_VOLUME_DOWN_PIN`: GPIO pin for volume down button (default: `24`)
-- `GPIO_CHANNEL_UP_PIN`: GPIO pin for channel up button (default: `14`)
-- `GPIO_CHANNEL_DOWN_PIN`: GPIO pin for channel down button (default: `15`)
-- `RADIO_QUIET`: Set to `true` for minimal logging (state changes only), `false` for debug output (default: `false`)
-- `PULSE_SERVER`: PulseAudio server address if needed
-
-**Volume Mounts:**
-- `/app/last_channel.txt`: Persists the last selected channel
-- `/run/user/1000/pulse`: PulseAudio socket for audio output
-- `/dev/i2c-1` and `/dev/gpiomem`: Hardware device access for Raspberry Pi
-
-#### Testing Without Hardware
-
-For development/testing without physical hardware:
-
-```bash
-docker run -it \
-  --name plex-radio-test \
-  -e HARDWARE_MODE=false \
-  -e PLEX_RADIO_API_URL=http://host.docker.internal:5000 \
-  ghcr.io/kernelkaribou/plex-radio-client:latest
-```
-
-#### Custom GPIO Pin Configuration
-
-```bash
-docker run -d \
-  --name plex-radio-client \
-  --privileged \
-  --network host \
-  -e PLEX_RADIO_API_URL=http://localhost:5000 \
-  -e GPIO_POWER_PIN=26 \
-  -e GPIO_VOLUME_UP_PIN=19 \
-  -e GPIO_VOLUME_DOWN_PIN=13 \
-  -e GPIO_CHANNEL_UP_PIN=6 \
-  -e GPIO_CHANNEL_DOWN_PIN=5 \
-  ghcr.io/kernelkaribou/plex-radio-client:latest
-```
-
-#### Multi-Architecture Support
-
-The container supports multiple architectures:
-- `linux/amd64` (x86_64)
-- `linux/arm64` (ARM 64-bit, Raspberry Pi 4/5)
-- `linux/arm/v7` (ARM 32-bit, Raspberry Pi 2/3)
-
-Docker will automatically pull the correct architecture for your system.
-
-### Local Python Installation
-
-### Using the Refactored System
-
-```python
-from radio_client import PlexRadioClient
-from display_manager import create_i2c_display_manager
-
-# Create radio client with I2C LCD display
-plex_radio = PlexRadioClient()
-
-# The radio client will automatically use I2C LCD display
-# Run the main script:
-# python radio_client.py
-```
-
-### Creating Custom Display Configurations
-
-```python
-from display_manager import DisplayManager, MockDisplayDriver
-from radio_client import PlexRadioClient
-
-# Create custom display configuration
-driver = MockDisplayDriver(20, 4)  # 20x4 character display
-display_manager = DisplayManager(driver)
-
-# Create radio client with custom display
-plex_radio = PlexRadioClient(display_manager=display_manager)
-```
-
-## Creating Custom Display Drivers
-
-To support a new display type, extend the `DisplayDriver` class:
-
-```python
-from display_manager import DisplayDriver
-
-class MyDisplayDriver(DisplayDriver):
-    def __init__(self):
-        # Initialize your display hardware
-        self.width = 16
-        self.height = 2
-    
-    def clear(self):
-        # Clear the display
-        pass
-    
-    def display_text(self, text: str, line: int):
-        # Display text on the specified line (1-indexed)
-        pass
-    
-    def get_dimensions(self) -> tuple:
-        return (self.width, self.height)
-```
-
-## Creating Custom Screens
-
-To create a new screen type, extend the `DisplayScreen` class:
-
-```python
-from display_manager import DisplayScreen
-
-class WeatherScreen(DisplayScreen):
-    def __init__(self):
-        super().__init__("weather")
-    
-    def render(self, driver, context):
-        # Get display dimensions
-        width, height = driver.get_dimensions()
-        
-        # Get data from context
-        temperature = context.get('temperature', 'N/A')
-        
-        # Display content
-        driver.display_text(f"Temp: {temperature}".center(width), 1)
-        driver.display_text("Weather".center(width), 2)
-        
-        # Return True to continue displaying, False to revert to default
-        return True
-```
-
-## Integration Examples
-
-### Example 1: OLED Display
-```python
-from display_manager import DisplayDriver, DisplayManager
-import board
-from adafruit_ssd1306 import SSD1306_I2C
-
-class OLEDDriver(DisplayDriver):
-    def __init__(self):
-        self.oled = SSD1306_I2C(128, 32, board.I2C())
-        self.width = 21  # Characters that fit in 128px
-        self.height = 4  # Lines that fit in 32px
-    
-    def clear(self):
-        self.oled.fill(0)
-        self.oled.show()
-    
-    def display_text(self, text: str, line: int):
-        y = (line - 1) * 8
-        self.oled.text(text, 0, y, 1)
-        self.oled.show()
-    
-    def get_dimensions(self):
-        return (self.width, self.height)
-
-# Use with radio client
-display_manager = DisplayManager(OLEDDriver())
-plex_radio = PlexRadioClient(display_manager=display_manager)
-```
-
-### Example 2: Custom Screen with Multiple Information
-```python
-class InfoScreen(DisplayScreen):
-    def __init__(self):
-        super().__init__("info")
-        self.start_time = time.time()
-    
-    def render(self, driver, context):
-        width, height = driver.get_dimensions()
-        
-        # Show multiple pieces of information
-        lines = [
-            f"Channel: {context.get('channel_name', 'N/A')}",
-            f"Song: {context.get('current_song', 'N/A')}",
-            f"Volume: {context.get('last_volume', 'N/A')}",
-            f"Time: {time.strftime('%H:%M:%S')}"
-        ]
-        
-        for i, line in enumerate(lines[:height], 1):
-            driver.display_text(line[:width].ljust(width), i)
-        
-        # Display for 5 seconds, then revert to default
-        return (time.time() - self.start_time) < 5
-```
-
-### Example 3: Automatic Screen Rotation
-```python
-from display_config_examples import AdvancedDisplayManager, WeatherScreen
-
-# Create advanced display manager
-display_manager = AdvancedDisplayManager(I2CLCDDriver())
-
-# Enable rotation between multiple screens
-rotation_screens = [
-    WeatherScreen(),
-    InfoScreen(),
-    RadioDefaultScreen()
-]
-display_manager.enable_screen_rotation(rotation_screens, interval=8)
-
-# Use with radio client
-plex_radio = PlexRadioClient(display_manager=display_manager)
-```
+- `gpiozero` - GPIO button support
+- `i2c-lcd` - I2C LCD display driver
+- `requests` - API communication
+- `PyYAML` - Configuration file parsing
 
 ## File Structure
 
 ```
 plex-radio-player/
-├── .github/workflows/
-│   └── docker-build.yml         # GitHub Actions workflow
-├── radio_client.py              # Radio core
-├── display_manager.py           # Display system library
-├── display_config_examples.py   # Configuration examples
-├── last_channel.txt             # Persistence file
-├── requirements.txt             # Dependencies
-├── Dockerfile                   # Container build instructions
-├── docker-compose.yml           # Docker Compose configuration
-├── entrypoint.sh               # Container startup script
-├── Makefile                    # Build automation
-├── DOCKER.md                   # Docker usage guide
-└── README.md                   # This documentation
+├── radio_client.py      # Main application
+├── display_manager.py   # Display manager
+├── clear_screen.py      # LCD clear utility
+├── config.yaml          # Configuration file
+├── last_channel.txt     # Channel persistence
+├── requirements.txt     # Dependencies
+└── README.md            # This documentation
 ```
-
-## Dependencies
-
-The display manager uses the same dependencies as the original system:
-- `i2c_lcd` for I2C LCD displays (when using I2CLCDDriver)
-- Standard library modules for core functionality
-
-Additional dependencies for custom drivers (optional):
-- `adafruit-circuitpython-ssd1306` for OLED displays
-- Other display-specific libraries as needed
 
 ## Troubleshooting
 
@@ -319,49 +103,23 @@ Additional dependencies for custom drivers (optional):
 
 1. **Display corrupted or frozen**:
    ```bash
-   # Clear the display directly
    python3 clear_screen.py
-   
-   # Or from Docker container
-   docker exec plex-radio-client python3 clear_screen.py
    ```
 
 2. **I2C LCD not detected**:
-   - Ensure I2C is enabled on your system
+   - Ensure I2C is enabled: `sudo raspi-config`
    - Check device permissions: `ls -la /dev/i2c-*`
    - Verify LCD is connected and powered
    - Test I2C detection: `i2cdetect -y 1`
 
 3. **Permission denied on /dev/i2c-1**:
    - Add user to i2c group: `sudo usermod -a -G i2c $USER`
-   - Or run with sudo (not recommended for production)
+   - Logout and login again
 
 4. **Application fails to start**:
    - This is expected behavior if no I2C LCD is detected
    - The application requires hardware I2C LCD to operate
    - Check that `i2c-lcd` Python module is installed
-
-### Screen Clear Utility
-
-The `clear_screen.py` script provides a quick way to reset the I2C LCD display:
-
-```bash
-# Direct usage
-python3 clear_screen.py
-
-# Docker container usage  
-docker exec plex-radio-client python3 clear_screen.py
-
-# Make executable for convenience
-chmod +x clear_screen.py
-./clear_screen.py
-```
-
-This utility:
-- Clears the entire display
-- Shows a brief "Screen Cleared" message
-- Performs a final clear
-- Exits with proper error codes
 
 ### Common Issues
 
@@ -371,24 +129,34 @@ This utility:
    ```
 
 2. **GPIO button not responding**:
-   - Check GPIO pin configuration in environment variables
+   - Check GPIO pin configuration in `config.yaml`
    - Verify physical wiring matches configured pins
    - Ensure GPIO permissions are correct
 
-### Getting Help
+3. **ffplay not found**:
+   ```bash
+   sudo apt update
+   sudo apt install ffmpeg
+   ```
+
+4. **API connectivity issues**:
+   - Verify API URL is correct in `config.yaml`
+   - Ensure Plex Radio server is running and accessible
+   - Check network connectivity
+
+## Getting Help
 
 For hardware-related issues:
-1. Test I2C connectivity with `i2cdetect`
-2. Use the screen clear utility to reset display
+1. Test I2C connectivity with `i2cdetect -y 1`
+2. Use the screen clear utility to reset display: `python3 clear_screen.py`
 3. Check system logs for I2C/GPIO errors
 
 For API connectivity issues:
-1. Verify PLEX_RADIO_API_URL is correct
-2. Ensure Plex Radio server is running and accessible
-2. Check ffplay installation
-3. Verify GPIO button connections
+1. Verify the Plex Radio server is running
+2. Test API endpoint manually: `curl http://your-server:5000/channels`
+3. Check firewall settings
 
 
-## NOTE
+## Note
 
-I absolutely used AI to write this whole thing and while initially conflicted I dont care as much as I am listening to my tunes faster.
+I absolutely used AI to write this because I am shameless and just wanted to listen to my tunes.
