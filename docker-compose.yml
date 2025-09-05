@@ -47,5 +47,7 @@ services:
     # Privileges needed for GPIO and I2C access
     privileged: true
     
-    # User mapping for audio access
+    # User mapping for audio access and I2C group membership
     user: "${UID:-1000}:${GID:-1000}"
+    group_add:
+      - "994"  # i2c group - adjust GID if different on your system, 'getent group i2c' to check
