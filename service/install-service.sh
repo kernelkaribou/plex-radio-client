@@ -88,13 +88,9 @@ RestartSec=10
 StandardOutput=journal
 StandardError=journal
 
-# Security settings
+# Security settings - Relaxed for GPIO access
 NoNewPrivileges=yes
 ReadWritePaths=$PROJECT_DIR
-ReadWritePaths=/dev/gpiomem
-ReadWritePaths=/dev/mem
-ReadWritePaths=/sys/class/gpio
-ReadWritePaths=/sys/devices
 PrivateTmp=yes
 
 [Install]
